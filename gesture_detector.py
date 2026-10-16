@@ -41,14 +41,18 @@ class GestureController:
                 self.detector = vision.HandLandmarker.create_from_options(options)
 
     def _is_finger_extended(self, pts, tip_idx, mcp_idx):
-        if len(pts) <= max(tip_idx, mcp_idx):
+        pip_idx = tip_idx - 2
+        if len(pts) <= max(tip_idx, mcp_idx) or pip_idx <= mcp_idx:
             return False
-        wrist = pts[0]
-        wrist_to_tip = np.hypot(pts[tip_idx][0] - wrist[0], pts[tip_idx][1] - wrist[1])
-        wrist_to_mcp = np.hypot(pts[mcp_idx][0] - wrist[0], pts[mcp_idx][1] - wrist[1])
-        if wrist_to_mcp == 0:
+        mcp = np.asarray(pts[mcp_idx], dtype=np.float32)
+        pip = np.asarray(pts[pip_idx], dtype=np.float32)
+        tip = np.asarray(pts[tip_idx], dtype=np.float32)
+        first_segment = np.linalg.norm(pip - mcp)
+        second_segment = np.linalg.norm(tip - pip)
+        total_length = first_segment + second_segment
+        if total_length == 0:
             return False
-        return wrist_to_tip > 1.15 * wrist_to_mcp
+        return np.linalg.norm(tip - mcp) >= 0.78 * total_length
 
     def get_direction_and_action(self, frame, current_direction):
         new_direction = current_direction
@@ -97,13 +101,13 @@ class GestureController:
                     action = "RESTART"
                     cv2.putText(frame, "ACTION: RESTART (PEACE ✌️)", (10, 30),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                else:
-                    mcp = pts[5]
+                elif index_open and not middle_open:
+                    pip = pts[6]
                     tip = pts[8]
 
-                    dx = tip[0] - mcp[0]
-                    dy = tip[1] - mcp[1]
-                    threshold = 12
+                    dx = tip[0] - pip[0]
+                    dy = tip[1] - pip[1]
+                    threshold = max(8, np.hypot(dx, dy) * 0.2)
 
                     candidate_direction = None
                     if abs(dx) > abs(dy):
@@ -128,11 +132,15 @@ class GestureController:
                         if candidate_direction != opposites.get(current_direction):
                             new_direction = candidate_direction
 
-                    cv2.arrowedLine(frame, mcp, tip, (0, 255, 255), 3, tipLength=0.3)
+                    cv2.arrowedLine(frame, pip, tip, (0, 255, 255), 3, tipLength=0.3)
+                else:
+                    self._smoothed_points = None
         else:
             self._smoothed_points = None
 
-        cv2.putText(frame, f"DIR: {new_direction}", (10, h - 15),
+        cv2.putText(frame, f"AIM: {new_direction}", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+        cv2.putText(frame, f"STEER: {new_direction}", (10, h - 15),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
         return new_direction, action, frame

@@ -43,8 +43,10 @@ class SnakeGame:
 
     def reset(self):
         self.snake = [(self.width // 2, self.height // 2)]
+        self._previous_snake = self.snake.copy()
         self.direction = "RIGHT"
         self.pending_direction = self.direction
+        self._direction_queue = []
         self.score = 0
         self.game_over = False
         self.last_move_time = pygame.time.get_ticks()
@@ -73,11 +75,18 @@ class SnakeGame:
         if self.game_over:
             return
 
-        # Buffer turns between movement ticks so brief inputs are not lost.
+        # Preserve up to two legal turns entered between movement ticks.
         opposites = {"UP": "DOWN", "DOWN": "UP", "LEFT": "RIGHT", "RIGHT": "LEFT"}
+        planned_direction = (
+            self._direction_queue[-1]
+            if self._direction_queue
+            else self.direction
+        )
         if (new_direction in opposites
-                and opposites[new_direction] != self.direction
-                and opposites[new_direction] != self.pending_direction):
+                and new_direction != planned_direction
+                and opposites[new_direction] != planned_direction
+                and len(self._direction_queue) < 2):
+            self._direction_queue.append(new_direction)
             self.pending_direction = new_direction
 
         # Throttle movement speed
@@ -86,7 +95,13 @@ class SnakeGame:
             return
 
         self.last_move_time = current_time
-        self.direction = self.pending_direction
+        if self._direction_queue:
+            self.direction = self._direction_queue.pop(0)
+        self.pending_direction = (
+            self._direction_queue[-1]
+            if self._direction_queue
+            else self.direction
+        )
 
         # Move head
         hx, hy = self.snake[0]
@@ -101,20 +116,24 @@ class SnakeGame:
 
         # Collision detection
         if (hx < 0 or hx >= self.width or hy < 0 or hy >= self.height or new_head in occupied_segments):
+            self._previous_snake = self.snake.copy()
             self.game_over = True
             self.sounds.play_game_over()
             return
 
+        previous_snake = self.snake.copy()
         self.snake.insert(0, new_head)
 
         # Eat food
         if will_grow:
+            self._previous_snake = previous_snake + [previous_snake[-1]]
             self.score += 10
             self.sounds.play_eat()
             # Score popup
             self.score_popups.append((self.food[0], self.food[1], 40, "+10"))
             self._spawn_food()
         else:
+            self._previous_snake = previous_snake
             self.snake.pop()
 
     def draw(self, surface):
@@ -138,8 +157,25 @@ class SnakeGame:
         pygame.draw.rect(surface, (255, 100, 180),
                          (fx + 3, fy + 3, self.grid_size - 6, self.grid_size - 6), border_radius=4)
 
-        # Draw the snake on grid positions, moving only on each game tick.
-        for i, (sx, sy) in enumerate(self.snake):
+        movement_progress = max(
+            0.0,
+            min(
+                (pygame.time.get_ticks() - self.last_move_time) / self.move_delay,
+                1.0,
+            ),
+        )
+        snake_positions = []
+        for index, (sx, sy) in enumerate(self.snake):
+            previous_x, previous_y = self._previous_snake[
+                min(index, len(self._previous_snake) - 1)
+            ]
+            snake_positions.append((
+                round(previous_x + (sx - previous_x) * movement_progress),
+                round(previous_y + (sy - previous_y) * movement_progress),
+            ))
+
+        # Interpolate between grid steps so movement stays smooth at every speed.
+        for i, (sx, sy) in enumerate(snake_positions):
             if i == 0:
                 color = (0, 230, 255)
             else:
@@ -151,7 +187,7 @@ class SnakeGame:
 
         # Draw eyes on snake head
         if self.snake:
-            hx, hy = self.snake[0]
+            hx, hy = snake_positions[0]
             cx = hx + self.grid_size // 2
             cy = hy + self.grid_size // 2
             eye_map = {

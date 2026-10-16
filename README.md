@@ -29,7 +29,7 @@ You can play seamlessly using either AI web-camera hand gestures or traditional 
 
 | Action | Primary AI Gesture Control | Alternative Keyboard / Mouse Control |
 | :--- | :--- | :--- |
-| **Change Direction** | Point **Index Finger** (Up ▲, Down ▼, Left ◄, Right ►) | **Arrow Keys** or Click On-Screen UI Buttons |
+| **Change Direction** | Point with the **Index Finger** (keep the middle finger folded); point up, down, left, or right to steer | **Arrow Keys** or click the matching on-screen arrow button |
 | **Restart Game** | Show **Peace Sign (✌️)** during Game Over | Press **`R`** key on Keyboard |
 | **Exit Game** | Close Window (`X` button) | Close Window (`X` button) |
 

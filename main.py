@@ -735,6 +735,8 @@ def main():
                         elif event.key == pygame.K_r and game.game_over:
                             game.reset()
                             current_direction = "RIGHT"
+                            if camera_worker is not None:
+                                camera_worker.set_direction(current_direction)
                         if event.key in (
                                 pygame.K_UP, pygame.K_DOWN,
                                 pygame.K_LEFT, pygame.K_RIGHT,
@@ -810,7 +812,7 @@ def main():
 
                     screen.blit(sfont.render(camera_status, True, (150, 170, 200)),
                                 (GAME_WIDTH + 20, 375))
-                    screen.blit(font.render(f"Direction: {current_direction}", True,
+                    screen.blit(font.render(f"Snake: {game.direction}", True,
                                             (0, 230, 255)),
                                 (GAME_WIDTH + 20, 395))
                     screen.blit(font.render(
@@ -863,7 +865,7 @@ def main():
                     yo = 250
                     screen.blit(sfont.render(camera_status, True, (150, 170, 200)),
                                 (GAME_WIDTH + 20, yo))
-                    screen.blit(font.render(f"Direction: {current_direction}", True,
+                    screen.blit(font.render(f"Snake: {game.direction}", True,
                                             (0, 230, 255)),
                                 (GAME_WIDTH + 20, yo + 30))
                     screen.blit(font.render(
@@ -894,7 +896,7 @@ def main():
                     screen.blit(lt, (GAME_WIDTH + CAM_PANEL_WIDTH // 2
                                      - lt.get_width() // 2, 180))
 
-                    screen.blit(font.render(f"Direction: {current_direction}", True,
+                    screen.blit(font.render(f"Snake: {game.direction}", True,
                                             (0, 230, 255)),
                                 (GAME_WIDTH + 20, 400))
                     screen.blit(font.render(
