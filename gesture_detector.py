@@ -1,4 +1,5 @@
 import os
+import time
 
 import cv2
 import numpy as np
@@ -19,6 +20,8 @@ class GestureController:
         self.height = height
         self.detector = None
         self._smoothed_points = None
+        self._missed_frames = 0
+        self._last_timestamp_ms = 0
 
         self.HAND_CONNECTIONS = [
             (0,1), (1,2), (2,3), (3,4),
@@ -35,8 +38,10 @@ class GestureController:
                 options = vision.HandLandmarkerOptions(
                     base_options=base_options,
                     num_hands=1,
+                    running_mode=vision.RunningMode.VIDEO,
                     min_hand_detection_confidence=0.4,
-                    min_hand_presence_confidence=0.4
+                    min_hand_presence_confidence=0.4,
+                    min_tracking_confidence=0.4,
                 )
                 self.detector = vision.HandLandmarker.create_from_options(options)
 
@@ -69,7 +74,10 @@ class GestureController:
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
 
-        detection_result = self.detector.detect(mp_image)
+        timestamp_ms = max(time.monotonic_ns() // 1_000_000,
+                           self._last_timestamp_ms + 1)
+        self._last_timestamp_ms = timestamp_ms
+        detection_result = self.detector.detect_for_video(mp_image, timestamp_ms)
 
         if detection_result.hand_landmarks:
             landmarks = detection_result.hand_landmarks[0]
@@ -80,10 +88,16 @@ class GestureController:
                 self._smoothed_points = raw_pts
             else:
                 self._smoothed_points = (
-                    0.8 * raw_pts + 0.2 * self._smoothed_points
+                    0.35 * raw_pts + 0.65 * self._smoothed_points
                 )
-            pts = [tuple(point.astype(int)) for point in self._smoothed_points]
+            self._missed_frames = 0
+        else:
+            self._missed_frames += 1
+            if self._missed_frames > 5:
+                self._smoothed_points = None
 
+        if self._smoothed_points is not None:
+            pts = [tuple(point.astype(int)) for point in self._smoothed_points]
             if len(pts) >= 21:
                 for start_idx, end_idx in self.HAND_CONNECTIONS:
                     cv2.line(frame, pts[start_idx], pts[end_idx], (0, 255, 150), 2)
@@ -94,49 +108,47 @@ class GestureController:
 
                 index_open = self._is_finger_extended(pts, 8, 5)
                 middle_open = self._is_finger_extended(pts, 12, 9)
-                ring_open = self._is_finger_extended(pts, 16, 13)
-                pinky_open = self._is_finger_extended(pts, 20, 17)
 
-                if index_open and middle_open and not ring_open and not pinky_open:
-                    action = "RESTART"
-                    cv2.putText(frame, "ACTION: RESTART (PEACE ✌️)", (10, 30),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                elif index_open and not middle_open:
-                    pip = pts[6]
-                    tip = pts[8]
+                if detection_result.hand_landmarks:
+                    ring_open = self._is_finger_extended(pts, 16, 13)
+                    pinky_open = self._is_finger_extended(pts, 20, 17)
 
-                    dx = tip[0] - pip[0]
-                    dy = tip[1] - pip[1]
-                    threshold = max(8, np.hypot(dx, dy) * 0.2)
+                    if index_open and middle_open and not ring_open and not pinky_open:
+                        action = "RESTART"
+                        cv2.putText(frame, "ACTION: RESTART (PEACE ✌️)", (10, 30),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                    elif index_open and not middle_open:
+                        pip = pts[6]
+                        tip = pts[8]
 
-                    candidate_direction = None
-                    if abs(dx) > abs(dy):
-                        if dx > threshold:
-                            candidate_direction = "RIGHT"
-                        elif dx < -threshold:
-                            candidate_direction = "LEFT"
-                    else:
-                        # Image y increases downward: a fingertip above the knuckle has negative dy.
-                        if dy < -threshold:
-                            candidate_direction = "UP"
-                        elif dy > threshold:
-                            candidate_direction = "DOWN"
+                        dx = tip[0] - pip[0]
+                        dy = tip[1] - pip[1]
+                        threshold = max(8, np.hypot(dx, dy) * 0.2)
 
-                    if candidate_direction is not None:
-                        opposites = {
-                            "UP": "DOWN",
-                            "DOWN": "UP",
-                            "LEFT": "RIGHT",
-                            "RIGHT": "LEFT",
-                        }
-                        if candidate_direction != opposites.get(current_direction):
-                            new_direction = candidate_direction
+                        candidate_direction = None
+                        if abs(dx) > abs(dy):
+                            if dx > threshold:
+                                candidate_direction = "RIGHT"
+                            elif dx < -threshold:
+                                candidate_direction = "LEFT"
+                        else:
+                            # Image y increases downward: a fingertip above the knuckle has negative dy.
+                            if dy < -threshold:
+                                candidate_direction = "UP"
+                            elif dy > threshold:
+                                candidate_direction = "DOWN"
 
-                    cv2.arrowedLine(frame, pip, tip, (0, 255, 255), 3, tipLength=0.3)
-                else:
-                    self._smoothed_points = None
-        else:
-            self._smoothed_points = None
+                        if candidate_direction is not None:
+                            opposites = {
+                                "UP": "DOWN",
+                                "DOWN": "UP",
+                                "LEFT": "RIGHT",
+                                "RIGHT": "LEFT",
+                            }
+                            if candidate_direction != opposites.get(current_direction):
+                                new_direction = candidate_direction
+
+                        cv2.arrowedLine(frame, pip, tip, (0, 255, 255), 3, tipLength=0.3)
 
         cv2.putText(frame, f"AIM: {new_direction}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
