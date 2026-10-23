@@ -1,87 +1,103 @@
-# 🌌 Nokia Snake Game — Galaxy Edition 🐍
+# Nokia Snake Game — Galaxy Edition 🐍🌌
 
-An immersive, retro-futuristic **Nokia Snake Game** engineered in Python using **Pygame-CE**, **OpenCV**, and the **MediaPipe Tasks API**. 
+A retro inspired Snake game built with Python. It pairs a galaxy themed interface and generated sound effects with optional webcam hand gesture controls, while keeping keyboard and on screen controls available too.
 
-Experience the classic nostalgic feel of the legendary Nokia 3310 Snake game combined with a stunning **deep-space Galaxy Theme**, AI-powered hand gesture controls, custom sound effects, and smooth multi-stage menu navigation!
+## Features
 
----
+- Galaxy themed animated menus and game screen
+- Easy, Intermediate, and Fast difficulty levels
+- Webcam gesture steering with a keyboard and on screen button fallback
+- Rules and About screens
+- Procedurally generated startup, click, food, and game over sounds
+- Score tracking and restart after a game ends
 
-## 🌟 Game UI, Audio & Features
+## Tech stack
 
-* **Stunning Galaxy Edition UI**:
-  * Features a gorgeous deep-space starfield background with twinkling stars and animated floating space characters.
-  * Sleek modern typography paired with vibrant neon cyan (`#00E5FF`) and magenta (`#FF0080`) glowing accents.
-* **Immersive Sound Effects (SFX)**:
-  * **App Startup**: Nostalgic opening jingle as you enter the cosmic universe.
-  * **UI Clicks**: Crisp audio feedback whenever you press buttons, select speeds, or navigate menus.
-  * **Gameplay Audio**: Satisfying munching sound effects when the snake feeds on cosmic energy.
-  * **Game Over**: Distinct sound effect signaling a collision accompanied by your final score breakdown.
-* **Multi-Stage Navigation Flow**:
-  1. **Main Menu**: Choose between starting the game, viewing the rules, or reading about the game's engineering.
-  2. **Speed Selection**: Pick your challenge level (**Easy**, **Intermediate**, or **Fast**) before diving into action.
-  3. **How to Play & About**: Interactive info screens outlining gesture controls and background history.
+| Technology | Role |
+| --- | --- |
+| Python | Application language and game logic |
+| Pygame-CE | Window, rendering, input, and game audio |
+| OpenCV | Webcam capture and camera frame handling |
+| MediaPipe Tasks | Hand landmark detection for gesture input |
+| NumPy | Image and audio sample arrays |
 
----
+The game is organized across `main.py` (menus, rendering, and app loop), `snake_engine.py` (Snake rules and scoring), `gesture_detector.py` (hand landmark interpretation), and `sound_effects.py` (generated audio). The MediaPipe hand landmark model is `hand_landmarker.task` in the project root.
 
-## 🕹️ Controls & Gestures Summary
+## User workflow
 
-You can play seamlessly using either AI web-camera hand gestures or traditional keyboard/mouse controls!
+1. Start the app to reach the main menu. Choose **Start Game**, **How to Play**, or **About** with the mouse or keyboard.
+2. Choose **Easy**, **Intermediate**, or **Fast** on the start screen, then begin. The webcam gesture worker starts when gameplay begins.
+3. Steer by pointing your index finger in the direction you want the snake to move. If the camera is unavailable, use the arrow keys or the on screen direction buttons.
+4. Eat food to grow and increase your score. Avoid running into the walls or the snake's body.
+5. After a collision, press **R** to restart. Close the game window to exit.
 
-| Action | Primary AI Gesture Control | Alternative Keyboard / Mouse Control |
-| :--- | :--- | :--- |
-| **Change Direction** | Point with the **Index Finger** (keep the middle finger folded); point up, down, left, or right to steer | **Arrow Keys** or click the matching on-screen arrow button |
-| **Restart Game** | Show **Peace Sign (✌️)** during Game Over | Press **`R`** key on Keyboard |
-| **Exit Game** | Close Window (`X` button) | Close Window (`X` button) |
+## Controls
 
----
+| Action | Control |
+| --- | --- |
+| Navigate menus | Mouse or keyboard arrows; press Enter to select |
+| Change direction | Point with index finger, use keyboard arrow keys, or click an on screen direction button |
+| Restart after game over | `R` |
+| Exit | Close the window |
 
-## 🚀 Quick Start & Installation Guide
+## Setup and run
 
-Follow these step-by-step instructions to set up your environment, install dependencies, and run the application on your desktop inside VS Code.
+### Requirements
 
-### Step 1: Clone the Repository (For new users downloading from GitHub)
-If you are downloading or cloning the repository to your machine, open your terminal and run:
+- Python 3.9 or newer
+- A webcam for gesture controls (optional; keyboard and on screen controls work without it)
+- `hand_landmarker.task` in the project root for gesture detection
+
+### 1. Get the project
+
 ```bash
-git clone [https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git)
-cd YOUR_REPOSITORY_NAME
+git clone <repository-url>
+cd NokiaSnakeGesture
+```
 
-### Step 2: Create & Activate a Virtual Environment
-It is strongly recommended to use a virtual environment to manage dependencies cleanly.
+### 2. Create and activate a virtual environment
 
-For Windows (PowerShell / VS Code Terminal):
+Windows PowerShell:
 
-Powershell
+```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate
-For macOS / Linux (Terminal):
+.\.venv\Scripts\Activate.ps1
+```
 
-Bash
-python -m venv .venv
+macOS or Linux:
+
+```bash
+python3 -m venv .venv
 source .venv/bin/activate
+```
 
-###Step 3: Install Dependencies
-With your virtual environment active, install all required packages using the provided requirements file:
+### 3. Install dependencies
 
-Bash
-pip install -r requirements.txt
+```bash
+python -m pip install -r requirements.txt
+```
 
+### 4. Get the hand landmark model
 
-###Step 4: Download the MediaPipe Hand Tracker Asset File
-The app requires the pre-trained Google MediaPipe hand_landmarker.task model file in your root folder for webcam hand gesture tracking.
+If `hand_landmarker.task` is not already present in the project root, download it:
 
-For Windows (PowerShell):
+```bash
+python -c "from urllib.request import urlretrieve; urlretrieve('https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', 'hand_landmarker.task')"
+```
 
-PowerShell
-Invoke-WebRequest -Uri "[https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task](https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task)" -OutFile "hand_landmarker.task"
+### 5. Launch the game
 
-For macOS / Linux (Terminal):
-
-Bash
-curl -L -o hand_landmarker.task [https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task](https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task)
-
-
-###Step 5: Run the Application
-Launch the game by executing the main script:
-
-Bash
+```bash
 python main.py
+```
+
+## Project files
+
+```text
+main.py                 Menus, visuals, input, and application loop
+snake_engine.py         Snake movement, food, collision, and scoring
+gesture_detector.py     Webcam hand landmark and gesture processing
+sound_effects.py        Procedurally generated game sound effects
+requirements.txt        Python package dependencies
+hand_landmarker.task    MediaPipe hand landmark model
+```
