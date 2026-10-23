@@ -1,6 +1,6 @@
 # Nokia Snake Game — Galaxy Edition 🐍🌌
 
-A retro inspired Snake game built with Python. It pairs a galaxy themed interface and generated sound effects with optional webcam hand gesture controls, while keeping keyboard and on screen controls available too.
+A NOKIA inspired Snake game built with Python. It pairs a galaxy themed interface and generated sound effects with optional webcam hand gesture controls, while keeping keyboard and on screen controls available too.
 
 ## Features
 
@@ -29,7 +29,7 @@ The game is organized across `main.py` (menus, rendering, and app loop), `snake_
 2. Choose **Easy**, **Intermediate**, or **Fast** on the start screen, then begin. The webcam gesture worker starts when gameplay begins.
 3. Steer by pointing your index finger in the direction you want the snake to move. If the camera is unavailable, use the arrow keys or the on screen direction buttons.
 4. Eat food to grow and increase your score. Avoid running into the walls or the snake's body.
-5. After a collision, press **R** to restart. Close the game window to exit.
+5. After a collision, press **R** to restart OR SHOW PEACE SIGN . Close the game window to exit.
 
 ## Controls
 
